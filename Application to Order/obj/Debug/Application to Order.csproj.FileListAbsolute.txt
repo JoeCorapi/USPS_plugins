@@ -1,0 +1,9 @@
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Application to Order.dll
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Application to Order.pdb
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Microsoft.Crm.Sdk.Proxy.dll
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Microsoft.Xrm.Sdk.dll
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Microsoft.Crm.Sdk.Proxy.xml
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Microsoft.Xrm.Sdk.xml
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.csproj.CopyComplete
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.dll
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.pdb
