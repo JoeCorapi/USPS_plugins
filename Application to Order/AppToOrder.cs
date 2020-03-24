@@ -49,12 +49,12 @@ namespace Application_to_Order
 
                         orderLine["isproductoverridden"] = false;
                         orderLine["productid"] = entity.Attributes["ss_product"];
-                        orderLine["uomid"] = new EntityReference("uom", Guid.Parse("b21a8937-fc8f-41a9-b40b-ab7c2f1958b7")); //uoms
+                        orderLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
                         orderLine["salesorderid"] = new EntityReference("salesorder", orderId);
                         orderLine["quantity"] = Convert.ToDecimal(1);
 
                         // Create the Order Line in Microsoft Dynamics CRM.
-                        tracingService.Trace("FollowupPlugin: Creating the Order Line.");
+                        tracingService.Trace("AppOrderPlugin: Creating the Order Line.");
                         service.Create(orderLine);
 
                         if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
@@ -62,12 +62,12 @@ namespace Application_to_Order
                             Entity shippingLine = new Entity("salesorderdetail");
                             shippingLine["isproductoverridden"] = false;
                             shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
-                            shippingLine["uomid"] = new EntityReference("uom", Guid.Parse("b21a8937-fc8f-41a9-b40b-ab7c2f1958b7")); //uoms
+                            shippingLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
                             shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
                             shippingLine["quantity"] = Convert.ToDecimal(1); ;
 
                             // Create the Order Line in Microsoft Dynamics CRM.
-                            tracingService.Trace("FollowupPlugin: Creating the Order Line.");
+                            tracingService.Trace("AppOrderPlugin: Creating the Order Line.");
                             service.Create(shippingLine);
 
                         }
