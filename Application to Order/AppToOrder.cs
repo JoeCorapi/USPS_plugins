@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ServiceModel;
 using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace Application_to_Order
 {
@@ -21,10 +22,11 @@ namespace Application_to_Order
                 serviceProvider.GetService(typeof(IPluginExecutionContext));
             // The InputParameters collection contains all the data passed in the message request.
             if (context.InputParameters.Contains("Target") &&
-                context.InputParameters["Target"] is Entity)
+                context.InputParameters["Target"] is EntityReference)
             {
                 // Obtain the target entity from the input parameters.
-                Entity entity = (Entity)context.InputParameters["Target"];
+                EntityReference reference = (EntityReference)context.InputParameters["Target"];
+
                 // Obtain the organization service reference which you will need for
                 // web service calls.
                 IOrganizationServiceFactory serviceFactory =
@@ -32,11 +34,14 @@ namespace Application_to_Order
                 IOrganizationService service = serviceFactory.CreateOrganizationService(context.UserId);
                 try
                 {
+                    Entity entity = new Entity();
+                    entity = service.Retrieve(reference.LogicalName, reference.Id, new ColumnSet(true));// ("ss_application");
+
                     Guid orderId = Guid.NewGuid();
                     Entity order = new Entity("salesorder", orderId);
                     Entity orderLine = new Entity("salesorderdetail");
 
-                    if (context.OutputParameters.Contains("id"))
+                    if (entity.Contains("ss_applicationid"))
                     {
                         order["name"] = ("Order for " + entity.Attributes["ss_name"]);
                         order["ss_application"] = new EntityReference("ss_application", entity.Id);
@@ -44,7 +49,7 @@ namespace Application_to_Order
                         order["customerid"] = entity.Attributes["ss_customer"];
 
                         // Create the Order in Microsoft Dynamics CRM.
-                        tracingService.Trace("FollowupPlugin: Creating the Order.");
+                        tracingService.Trace("AppOrderPlugin: Creating the Order.");
                         service.Create(order);
 
                         orderLine["isproductoverridden"] = false;
@@ -54,7 +59,7 @@ namespace Application_to_Order
                         orderLine["quantity"] = Convert.ToDecimal(1);
 
                         // Create the Order Line in Microsoft Dynamics CRM.
-                        tracingService.Trace("AppOrderPlugin: Creating the Order Line.");
+                        tracingService.Trace("AppOrderPlugin: Creating the Product Order Line.");
                         service.Create(orderLine);
 
                         if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
@@ -67,9 +72,15 @@ namespace Application_to_Order
                             shippingLine["quantity"] = Convert.ToDecimal(1); ;
 
                             // Create the Order Line in Microsoft Dynamics CRM.
-                            tracingService.Trace("AppOrderPlugin: Creating the Order Line.");
+                            tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
                             service.Create(shippingLine);
+                        }
 
+                        // Close Application
+                        if (order.Contains("salesorderid"))
+                        {
+                            entity["statuscode"] = 1;
+                            entity["statecode"] = 2;
                         }
                     }
                 }
