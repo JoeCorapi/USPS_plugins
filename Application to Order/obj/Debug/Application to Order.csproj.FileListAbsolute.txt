@@ -7,3 +7,4 @@ C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\bin\Debug\Microsof
 C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.csproj.CopyComplete
 C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.dll
 C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.pdb
+C:\Users\Ubnik\source\repos\USPS_Plugins\Application to Order\obj\Debug\Application to Order.csprojAssemblyReference.cache

@@ -47,6 +47,7 @@ namespace Application_to_Order
                         order["ss_application"] = new EntityReference("ss_application", entity.Id);
                         order["pricelevelid"] = entity.Attributes["ss_pricelist"];
                         order["customerid"] = entity.Attributes["ss_customer"];
+                        order["ss_destinationaddress"] = entity.Attributes["ss_destinationaddress"];
 
                         // Create the Order in Microsoft Dynamics CRM.
                         tracingService.Trace("AppOrderPlugin: Creating the Order.");
