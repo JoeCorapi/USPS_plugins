@@ -37,52 +37,78 @@ namespace Application_to_Order
                     Entity entity = new Entity();
                     entity = service.Retrieve(reference.LogicalName, reference.Id, new ColumnSet(true));// ("ss_application");
 
-                    Guid orderId = Guid.NewGuid();
-                    Entity order = new Entity("salesorder", orderId);
-                    Entity orderLine = new Entity("salesorderdetail");
 
-                    if (entity.Contains("ss_applicationid"))
+                    string fetchXml = @"<fetch distinct='false' mapping='logical' returntotalrecordcount='true' page='1' count='50' no-lock='false'>
+                                     <entity name='salesorder'>
+                                         <attribute name='entityimage_url'/>
+                                         <attribute name='name'/>
+                                         <attribute name='statecode'/>
+                                         <attribute name='totalamount'/>
+                                         <attribute name='salesorderid'/>
+                                         <order attribute='name' descending='true'/>
+                                         <link-entity name='ss_application' from='ss_applicationid' to='ss_application' alias='bb'>
+                                             <filter type='and'>
+                                                <condition attribute='ss_applicationid' operator='eq' uitype='ss_application' value='" + entity.Id + @"'/>
+                                             </filter>  
+                                         </link-entity>
+                                     </entity>
+                                 </fetch>";
+
+                    EntityCollection appOrders = service.RetrieveMultiple(new FetchExpression(fetchXml));
+
+                    if (appOrders.TotalRecordCount == 0)
                     {
-                        order["name"] = ("Order for " + entity.Attributes["ss_name"]);
-                        order["ss_application"] = new EntityReference("ss_application", entity.Id);
-                        order["pricelevelid"] = entity.Attributes["ss_pricelist"];
-                        order["customerid"] = entity.Attributes["ss_customer"];
-                        order["ss_destinationaddress"] = entity.Attributes["ss_destinationaddress"];
 
-                        // Create the Order in Microsoft Dynamics CRM.
-                        tracingService.Trace("AppOrderPlugin: Creating the Order.");
-                        service.Create(order);
+                        Guid orderId = Guid.NewGuid();
+                        Entity order = new Entity("salesorder", orderId);
+                        Entity orderLine = new Entity("salesorderdetail");
 
-                        orderLine["isproductoverridden"] = false;
-                        orderLine["productid"] = entity.Attributes["ss_product"];
-                        orderLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
-                        orderLine["salesorderid"] = new EntityReference("salesorder", orderId);
-                        orderLine["quantity"] = Convert.ToDecimal(1);
-
-                        // Create the Order Line in Microsoft Dynamics CRM.
-                        tracingService.Trace("AppOrderPlugin: Creating the Product Order Line.");
-                        service.Create(orderLine);
-
-                        if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
+                        if (entity.Contains("ss_applicationid"))
                         {
-                            Entity shippingLine = new Entity("salesorderdetail");
-                            shippingLine["isproductoverridden"] = false;
-                            shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
-                            shippingLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
-                            shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
-                            shippingLine["quantity"] = Convert.ToDecimal(1); ;
+                            order["name"] = ("Order for " + entity.Attributes["ss_name"]);
+                            order["ss_application"] = new EntityReference("ss_application", entity.Id);
+                            order["pricelevelid"] = entity.Attributes["ss_pricelist"];
+                            order["customerid"] = entity.Attributes["ss_customer"];
+                            order["ss_destinationaddress"] = entity.Attributes["ss_destinationaddress"];
+
+                            // Create the Order in Microsoft Dynamics CRM.
+                            tracingService.Trace("AppOrderPlugin: Creating the Order.");
+                            service.Create(order);
+
+                            orderLine["isproductoverridden"] = false;
+                            orderLine["productid"] = entity.Attributes["ss_product"];
+                            orderLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
+                            orderLine["salesorderid"] = new EntityReference("salesorder", orderId);
+                            orderLine["quantity"] = Convert.ToDecimal(1);
 
                             // Create the Order Line in Microsoft Dynamics CRM.
-                            tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
-                            service.Create(shippingLine);
-                        }
+                            tracingService.Trace("AppOrderPlugin: Creating the Product Order Line.");
+                            service.Create(orderLine);
 
-                        // Close Application
-                        if (order.Contains("salesorderid"))
-                        {
-                            entity["statuscode"] = 1;
-                            entity["statecode"] = 2;
+                            if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
+                            {
+                                Entity shippingLine = new Entity("salesorderdetail");
+                                shippingLine["isproductoverridden"] = false;
+                                shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
+                                shippingLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
+                                shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
+                                shippingLine["quantity"] = Convert.ToDecimal(1); ;
+
+                                // Create the Order Line in Microsoft Dynamics CRM.
+                                tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
+                                service.Create(shippingLine);
+                            }
+
+                            // Close Application
+                            if (order.Contains("salesorderid"))
+                            {
+                                entity["statuscode"] = 1;
+                                entity["statecode"] = 2;
+                            }
                         }
+                    } else
+                    {
+                        throw new InvalidPluginExecutionException("An order already exists for this application");
                     }
                 }
                 catch (FaultException<OrganizationServiceFault> ex)
