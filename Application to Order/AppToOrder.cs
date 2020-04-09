@@ -88,22 +88,56 @@ namespace Application_to_Order
                             if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
                             {
                                 Entity shippingLine = new Entity("salesorderdetail");
-                                shippingLine["isproductoverridden"] = false;
-                                shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
-                                shippingLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
-                                shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
-                                shippingLine["quantity"] = Convert.ToDecimal(1); ;
+                                Entity primaryUnit = new Entity("uom");
 
-                                // Create the Order Line in Microsoft Dynamics CRM.
-                                tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
-                                service.Create(shippingLine);
-                            }
 
-                            // Close Application
-                            if (order.Contains("salesorderid"))
-                            {
-                                entity["statuscode"] = 1;
-                                entity["statecode"] = 2;
+                                ConditionExpression condition = new ConditionExpression
+                                {
+                                    AttributeName = "name",
+                                    Operator = ConditionOperator.Equal
+                                };
+                                condition.Values.Add("Primary Unit");
+
+                                FilterExpression filter = new FilterExpression();
+                                filter.AddCondition(condition);
+
+                                QueryExpression query = new QueryExpression("uom");
+                                query.ColumnSet.AddColumn("uomid");
+                                query.Criteria.AddFilter(filter);
+
+                                EntityCollection uomList = service.RetrieveMultiple(query);
+
+                                //@"<Fetch mapping='logical'>
+                                //    <entity name='uom'>
+                                //        <attribute name='uomid'/>
+                                //        <attribute name='name'/>
+                                //        <filter type='and'>   
+                                //            <condition attribute='name' operator='eq' value='Primary Unit'/>   
+                                //        </filter>   
+                                //    </entity>
+                                //</fetch>";
+
+                                if (uomList.TotalRecordCount > 0)
+                                {
+                                    Guid uomId = uomList[0].Id;                      
+
+                                    shippingLine["isproductoverridden"] = false;
+                                    shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
+                                    shippingLine["uomid"] = new EntityReference("uom", uomId); //Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2") /uoms 
+                                    shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
+                                    shippingLine["quantity"] = Convert.ToDecimal(1); ;
+
+                                    // Create the Order Line in Microsoft Dynamics CRM.
+                                    tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
+                                    service.Create(shippingLine);
+                                }
+
+                                // Close Application
+                                if (order.Contains("salesorderid"))
+                                {
+                                    entity["statuscode"] = 1;
+                                    entity["statecode"] = 2;
+                                }
                             }
                         }
                     } else
