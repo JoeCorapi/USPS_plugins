@@ -137,6 +137,7 @@ namespace Application_to_Order
                                 {
                                     entity["statuscode"] = 1;
                                     entity["statecode"] = 2;
+                                    service.Update(entity);
                                 }
                             }
                         }
