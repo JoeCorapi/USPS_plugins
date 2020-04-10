@@ -65,6 +65,37 @@ namespace Application_to_Order
 
                         if (entity.Contains("ss_applicationid"))
                         {
+
+                            ConditionExpression condition = new ConditionExpression
+                            {
+                                AttributeName = "name",
+                                Operator = ConditionOperator.Equal
+                            };
+                            condition.Values.Add("Primary Unit");
+
+                            FilterExpression filter = new FilterExpression();
+                            filter.AddCondition(condition);
+
+                            QueryExpression query = new QueryExpression("uom");
+                            query.ColumnSet.AddColumn("name");
+                            query.Criteria.AddFilter(filter);
+
+                            EntityCollection uomList = service.RetrieveMultiple(query);
+
+                            if (uomList.Entities.Count > 0)
+                            {
+                                Guid uomId = uomList[0].Id;
+
+                                //@"<Fetch mapping='logical'>
+                                //    <entity name='uom'>
+                                //        <attribute name='uomid'/>
+                                //        <attribute name='name'/>
+                                //        <filter type='and'>   
+                                //            <condition attribute='name' operator='eq' value='Primary Unit'/>   
+                                //        </filter>   
+                                //    </entity>
+                                //</fetch>";
+
                             order["name"] = ("Order for " + entity.Attributes["ss_name"]);
                             order["ss_application"] = new EntityReference("ss_application", entity.Id);
                             order["pricelevelid"] = entity.Attributes["ss_pricelist"];
@@ -77,7 +108,7 @@ namespace Application_to_Order
 
                             orderLine["isproductoverridden"] = false;
                             orderLine["productid"] = entity.Attributes["ss_product"];
-                            orderLine["uomid"] = new EntityReference("uom", Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2")); //uoms
+                            orderLine["uomid"] = new EntityReference("uom", uomId); //uoms
                             orderLine["salesorderid"] = new EntityReference("salesorder", orderId);
                             orderLine["quantity"] = Convert.ToDecimal(1);
 
@@ -85,60 +116,34 @@ namespace Application_to_Order
                             tracingService.Trace("AppOrderPlugin: Creating the Product Order Line.");
                             service.Create(orderLine);
 
-                            if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
+                                if (entity.FormattedValues["ss_applicationtype"].Equals("Package Submission"))
+                                {
+                                    Entity shippingLine = new Entity("salesorderdetail");
+                                    Entity primaryUnit = new Entity("uom");
+
+
+                                        shippingLine["isproductoverridden"] = false;
+                                        shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
+                                        shippingLine["uomid"] = new EntityReference("uom", uomId); //Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2") /uoms 
+                                        shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
+                                        shippingLine["quantity"] = Convert.ToDecimal(1); ;
+
+                                        // Create the Order Line in Microsoft Dynamics CRM.
+                                        tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
+                                        service.Create(shippingLine);
+                                    
+                                }
+
+                                //close application
+                                if (order.Id==orderId)
+                                {
+                                    entity["statuscode"] = new OptionSetValue(2);
+                                    entity["statecode"] = new OptionSetValue(1);  
+                                    service.Update(entity);  
+                                }
+                            } else
                             {
-                                Entity shippingLine = new Entity("salesorderdetail");
-                                Entity primaryUnit = new Entity("uom");
-
-
-                                ConditionExpression condition = new ConditionExpression
-                                {
-                                    AttributeName = "name",
-                                    Operator = ConditionOperator.Equal
-                                };
-                                condition.Values.Add("Primary Unit");
-
-                                FilterExpression filter = new FilterExpression();
-                                filter.AddCondition(condition);
-
-                                QueryExpression query = new QueryExpression("uom");
-                                query.ColumnSet.AddColumn("uomid");
-                                query.Criteria.AddFilter(filter);
-
-                                EntityCollection uomList = service.RetrieveMultiple(query);
-
-                                //@"<Fetch mapping='logical'>
-                                //    <entity name='uom'>
-                                //        <attribute name='uomid'/>
-                                //        <attribute name='name'/>
-                                //        <filter type='and'>   
-                                //            <condition attribute='name' operator='eq' value='Primary Unit'/>   
-                                //        </filter>   
-                                //    </entity>
-                                //</fetch>";
-
-                                if (uomList.TotalRecordCount > 0)
-                                {
-                                    Guid uomId = uomList[0].Id;                      
-
-                                    shippingLine["isproductoverridden"] = false;
-                                    shippingLine["productid"] = entity.Attributes["ss_shippingspeed"];
-                                    shippingLine["uomid"] = new EntityReference("uom", uomId); //Guid.Parse("46d8b737-2339-4011-984a-5e54126ccdb2") /uoms 
-                                    shippingLine["salesorderid"] = new EntityReference("salesorder", orderId);
-                                    shippingLine["quantity"] = Convert.ToDecimal(1); ;
-
-                                    // Create the Order Line in Microsoft Dynamics CRM.
-                                    tracingService.Trace("AppOrderPlugin: Creating the Shipping Speed Order Line.");
-                                    service.Create(shippingLine);
-                                }
-
-                                // Close Application
-                                if (order.Contains("salesorderid"))
-                                {
-                                    entity["statuscode"] = 1;
-                                    entity["statecode"] = 2;
-                                    service.Update(entity);
-                                }
+                                throw new InvalidPluginExecutionException("UoM not found");
                             }
                         }
                     } else
